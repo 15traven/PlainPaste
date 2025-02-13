@@ -1,5 +1,6 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
+use clipboard_listener::ClipboardListener;
 use tao::{
     event::Event,
     event_loop::{
@@ -15,6 +16,7 @@ use tray_icon::{
 };
 
 mod helpers;
+mod clipboard_listener;
 
 enum UserEvent {
     MenuEvent(MenuEvent)
@@ -37,6 +39,7 @@ fn main() {
     ]);
 
     let mut tray_icon: Option<TrayIcon> = None;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -49,6 +52,11 @@ fn main() {
                         .build()
                         .unwrap()
                 );
+                
+                std::thread::spawn(move || {
+                    let mut clipboard_listener = ClipboardListener::new().unwrap();
+                    let _ = clipboard_listener.run();
+                });
             }
             Event::UserEvent(UserEvent::MenuEvent(event)) => {
                 if event.id == quit_item.id() {

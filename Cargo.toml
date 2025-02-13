@@ -7,3 +7,4 @@ edition = "2021"
 image = "0.25.5"
 tao = "0.31.1"
 tray-icon = "0.19.2"
+winapi = { version = "0.3.9", features = ["windef", "winuser"] }
