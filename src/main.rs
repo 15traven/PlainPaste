@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use tao::{
     event::{Event, WindowEvent},
@@ -6,12 +6,16 @@ use tao::{
     window::{Theme, Window, WindowBuilder}
 };
 use tray_icon::{
-    menu::{Menu, MenuEvent, MenuItem},
+    menu::{
+        Menu, MenuEvent, MenuItem, 
+        CheckMenuItem, PredefinedMenuItem
+    },
     TrayIcon, TrayIconBuilder
 };
 
 mod helpers;
 mod clipboard_listener;
+mod autolaunch;
 
 use clipboard_listener::ClipboardListener;
 
@@ -33,8 +37,11 @@ fn main() {
     }));
 
     let tray_menu = Menu::new();
+    let autolaunch_item = CheckMenuItem::new("Run at startup", true, true, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let _ = tray_menu.append_items(&[
+        &autolaunch_item,
+        &PredefinedMenuItem::separator(),
         &quit_item
     ]);
 
@@ -64,6 +71,10 @@ fn main() {
                     Theme::Light => tray_icon.as_ref().unwrap().set_icon(Some(dark_icon.clone())),
                     _ => Ok(())
                 };
+
+                if autolaunch::register().is_ok() {
+                    autolaunch_item.set_checked(autolaunch::is_enabled().unwrap());
+                }
                 
                 std::thread::spawn(move || {
                     let mut clipboard_listener = ClipboardListener::new().unwrap();
@@ -83,6 +94,13 @@ fn main() {
             }
 
             Event::UserEvent(UserEvent::MenuEvent(event)) => {
+                if event.id == autolaunch_item.id() {
+                    let _ = match autolaunch::is_enabled().unwrap() {
+                        true => autolaunch::disable(),
+                        false => autolaunch::enable()
+                    };
+                }
+
                 if event.id == quit_item.id() {
                     tray_icon.take();
                     *control_flow = ControlFlow::Exit;
