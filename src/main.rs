@@ -1,22 +1,19 @@
 #![windows_subsystem = "windows"]
 
-use clipboard_listener::ClipboardListener;
 use tao::{
-    event::Event,
-    event_loop::{
-        ControlFlow,
-        EventLoopBuilder
-    }
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoopBuilder},
+    window::{Theme, Window, WindowBuilder}
 };
 use tray_icon::{
-    menu::{
-        Menu, MenuEvent, MenuItem
-    },
+    menu::{Menu, MenuEvent, MenuItem},
     TrayIcon, TrayIconBuilder
 };
 
 mod helpers;
 mod clipboard_listener;
+
+use clipboard_listener::ClipboardListener;
 
 enum UserEvent {
     MenuEvent(MenuEvent)
@@ -25,6 +22,9 @@ enum UserEvent {
 fn main() {
     let light_icon_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/light_icon.png");
     let light_icon = helpers::load_icon(std::path::Path::new(light_icon_path));
+
+    let dark_icon_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/dark_icon.png");
+    let dark_icon = helpers::load_icon(std::path::Path::new(dark_icon_path));
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let proxy = event_loop.create_proxy();
@@ -38,26 +38,50 @@ fn main() {
         &quit_item
     ]);
 
+    let mut _window: Option<Window> = None;
     let mut tray_icon: Option<TrayIcon> = None;
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, event_loop, control_flow| {
         *control_flow = ControlFlow::Wait;
 
         match event {
             Event::NewEvents(tao::event::StartCause::Init) => {
+                _window = Some(
+                    WindowBuilder::new()
+                        .with_visible(false)
+                        .build(&event_loop)
+                        .unwrap()
+                );
+
                 tray_icon = Some(
                     TrayIconBuilder::new()
                         .with_menu(Box::new(tray_menu.clone()))
-                        .with_icon(light_icon.clone())
                         .build()
                         .unwrap()
                 );
+                let _ = match _window.as_ref().unwrap().theme() {
+                    Theme::Dark => tray_icon.as_ref().unwrap().set_icon(Some(light_icon.clone())),
+                    Theme::Light => tray_icon.as_ref().unwrap().set_icon(Some(dark_icon.clone())),
+                    _ => Ok(())
+                };
                 
                 std::thread::spawn(move || {
                     let mut clipboard_listener = ClipboardListener::new().unwrap();
                     let _ = clipboard_listener.run();
                 });
             }
+
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::ThemeChanged(theme) => {
+                    let _ = match theme {
+                        Theme::Dark => tray_icon.as_ref().unwrap().set_icon(Some(light_icon.clone())),
+                        Theme::Light => tray_icon.as_ref().unwrap().set_icon(Some(dark_icon.clone())),
+                        _ => Ok(())
+                    };
+                }
+                _ => {}
+            }
+
             Event::UserEvent(UserEvent::MenuEvent(event)) => {
                 if event.id == quit_item.id() {
                     tray_icon.take();
