@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use tao::{
     event::{Event, WindowEvent},
@@ -73,7 +73,13 @@ fn main() {
                 };
 
                 if autolaunch::register().is_ok() {
-                    autolaunch_item.set_checked(autolaunch::is_enabled().unwrap());
+                    let is_enabled = autolaunch::is_enabled();
+                    if is_enabled.is_err() {
+                        let _ = autolaunch::enable();
+                        autolaunch_item.set_checked(true);
+                    } else {
+                        autolaunch_item.set_checked(is_enabled.unwrap());
+                    }
                 }
                 
                 std::thread::spawn(move || {
