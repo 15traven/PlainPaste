@@ -18,6 +18,8 @@ use winapi::{
     }
 };
 
+use crate::helpers;
+
 pub struct ClipboardListener(HWND);
 
 impl Drop for ClipboardListener {
@@ -71,7 +73,7 @@ impl ClipboardListener {
             let mut msg: MSG = std::mem::zeroed();
             while GetMessageW(&mut msg, ptr::null_mut(), 0, 0) > 0 {
                 if msg.message == WM_CLIPBOARDUPDATE {
-                    println!("clipboard updated");
+                    let _ = helpers::process_clipboard();
                 }
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);

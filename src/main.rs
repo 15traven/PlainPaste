@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use clipboard_listener::ClipboardListener;
 use tao::{
