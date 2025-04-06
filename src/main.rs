@@ -38,10 +38,12 @@ fn main() {
     }));
 
     let tray_menu = Menu::new();
+    let clear_formatting_item = MenuItem::new("Clear formatting", false, None);
     let autoformat_item = CheckMenuItem::new("Automatically clear formating", true, true, None);
     let autolaunch_item = CheckMenuItem::new("Run at startup", true, true, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let _ = tray_menu.append_items(&[
+        &clear_formatting_item,
         &autoformat_item,
         &PredefinedMenuItem::separator(),
         &autolaunch_item,
@@ -102,11 +104,17 @@ fn main() {
             }
 
             Event::UserEvent(UserEvent::MenuEvent(event)) => {
+                if event.id == clear_formatting_item.id() {
+                    let _ = helpers::process_clipboard();
+                }
+
                 if event.id == autoformat_item.id() {
                     if autoformat_item.is_checked() {
                         clipboard_service = Some(ClipboardService::start().unwrap());
+                        clear_formatting_item.set_enabled(false);
                     } else {
                         clipboard_service.as_ref().unwrap().stop();
+                        clear_formatting_item.set_enabled(true);
                     }
                 }
 
