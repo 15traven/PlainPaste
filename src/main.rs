@@ -7,8 +7,9 @@ use tao::{
 };
 use tray_icon::{
     menu::{
-        Menu, MenuEvent, MenuItem, 
-        CheckMenuItem, PredefinedMenuItem
+        Menu, Submenu, MenuEvent, MenuItem, 
+        CheckMenuItem, PredefinedMenuItem,
+        AboutMetadata
     },
     TrayIcon, TrayIconBuilder
 };
@@ -37,16 +38,28 @@ fn main() {
         let _ = proxy.send_event(UserEvent::MenuEvent(event));
     }));
 
+    let more_submenu = Submenu::new("More", true);
+    let autolaunch_item = CheckMenuItem::new("Run at startup", true, true, None);
+    let _ = more_submenu.append_items(&[
+        &autolaunch_item,
+        
+        &PredefinedMenuItem::about(None, Some(AboutMetadata {
+            name: Some(env!("CARGO_PKG_NAME").to_string()),
+            version: Some(env!("CARGO_PKG_VERSION").to_string()),
+            ..Default::default()
+        })),
+    ]);
+
     let tray_menu = Menu::new();
     let clear_formatting_item = MenuItem::new("Clear formatting", false, None);
     let autoformat_item = CheckMenuItem::new("Automatically clear formating", true, true, None);
-    let autolaunch_item = CheckMenuItem::new("Run at startup", true, true, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let _ = tray_menu.append_items(&[
         &clear_formatting_item,
         &autoformat_item,
         &PredefinedMenuItem::separator(),
-        &autolaunch_item,
+        &more_submenu,
+        &PredefinedMenuItem::separator(),
         &quit_item
     ]);
 
