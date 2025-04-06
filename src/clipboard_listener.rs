@@ -17,8 +17,10 @@ use winapi::{
         DispatchMessageW
     }
 };
-
-use crate::helpers;
+use crate::{
+    helpers,
+    clipboard_service::WM_APP_QUIT
+};
 
 pub struct ClipboardListener(HWND);
 
@@ -60,6 +62,10 @@ impl ClipboardListener {
         }
     }
 
+    pub fn hwnd(&self) -> HWND {
+        self.0
+    }
+
     pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
         unsafe  {
             if self.0.is_null() {
@@ -74,7 +80,10 @@ impl ClipboardListener {
             while GetMessageW(&mut msg, ptr::null_mut(), 0, 0) > 0 {
                 if msg.message == WM_CLIPBOARDUPDATE {
                     let _ = helpers::process_clipboard();
+                } else if msg.message == WM_APP_QUIT {
+                    break;
                 }
+
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }

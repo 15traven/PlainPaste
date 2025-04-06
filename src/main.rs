@@ -15,9 +15,10 @@ use tray_icon::{
 
 mod helpers;
 mod clipboard_listener;
+mod clipboard_service;
 mod autolaunch;
 
-use clipboard_listener::ClipboardListener;
+use clipboard_service::ClipboardService;
 
 enum UserEvent {
     MenuEvent(MenuEvent)
@@ -37,16 +38,20 @@ fn main() {
     }));
 
     let tray_menu = Menu::new();
+    let autoformat_item = CheckMenuItem::new("Automatically clear formating", true, true, None);
     let autolaunch_item = CheckMenuItem::new("Run at startup", true, true, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let _ = tray_menu.append_items(&[
-        &autolaunch_item,
+        &autoformat_item,
         &PredefinedMenuItem::separator(),
+        &autolaunch_item,
         &quit_item
     ]);
 
     let mut _window: Option<Window> = None;
     let mut tray_icon: Option<TrayIcon> = None;
+
+    let mut clipboard_service: Option<ClipboardService> = None;
 
     event_loop.run(move |event, event_loop, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -82,10 +87,7 @@ fn main() {
                     }
                 }
                 
-                std::thread::spawn(move || {
-                    let mut clipboard_listener = ClipboardListener::new().unwrap();
-                    let _ = clipboard_listener.run();
-                });
+                clipboard_service = Some(ClipboardService::start().unwrap());
             }
 
             Event::WindowEvent { event, .. } => match event {
@@ -100,6 +102,14 @@ fn main() {
             }
 
             Event::UserEvent(UserEvent::MenuEvent(event)) => {
+                if event.id == autoformat_item.id() {
+                    if autoformat_item.is_checked() {
+                        clipboard_service = Some(ClipboardService::start().unwrap());
+                    } else {
+                        clipboard_service.as_ref().unwrap().stop();
+                    }
+                }
+
                 if event.id == autolaunch_item.id() {
                     let _ = match autolaunch::is_enabled().unwrap() {
                         true => autolaunch::disable(),
