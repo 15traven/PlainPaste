@@ -52,7 +52,7 @@ fn main() {
 
     let tray_menu = Menu::new();
     let clear_formatting_item = MenuItem::new("Clear formatting", false, None);
-    let autoformat_item = CheckMenuItem::new("Automatically clear formating", true, true, None);
+    let autoformat_item = CheckMenuItem::new("Automatically clear formatting", true, true, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let _ = tray_menu.append_items(&[
         &clear_formatting_item,
